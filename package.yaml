@@ -9,7 +9,7 @@ copyright:           2019 Skye Soss
 extra-source-files:
 - README.md
 
-# synopsis:            Short description of your package
+synopsis:            Haskell bindings to CLIPS
 # category:            Web
 
 description:         Please see the README on GitHub at <https://github.com/Skyb0rg007/clips#readme>
@@ -21,229 +21,243 @@ ghc-options:
 - -Wall
 
 flags:
+  system-clips:
+    default: false
+    manual: true
+    description: "Use CLIPS found on the system - must be version 6.4"
   clips-debug:
     default: false
     manual: true
-    description: Compile CLIPS with debugging enabled
+    description: "Compile CLIPS with debug symbols"
 
 library:
   source-dirs:  src
-  dependencies:
-  - clips-c2hs
+  build-tools:  c2hs
+  dependencies: clips-clib
+  # We need to manually list these so c2hs runs in the right order
+  exposed-modules:
+  - Clips.Raw.Types
+  - Clips.Raw.Core
+  - Clips.Raw.Advanced
 
 internal-libraries:
-  clips-c2hs:
-    include-dirs: include
-    extra-libraries: m
-    cc-options: -std=c99
-
+  clips-clib:
     when:
-      - condition: os(darwin)
-        cc-options:
-        - -DDARWIN
-        - -Wall
-        - -Wundef
-        - -Wpointer-arith
-        - -Wshadow
-        - -Wstrict-aliasing 
-        - -Winline
-        - -Wredundant-decls
-        - -Waggregate-return
-
-      - condition: os(linux)
-        cc-options:
-        - -DLINUX
-        - -Wall
-        - -Wundef
-        - -Wpointer-arith
-        - -Wshadow
-        - -Wstrict-aliasing
-        - -Winline
-        - -Wmissing-declarations
-        - -Wredundant-decls
-        - -Wmissing-prototypes
-        - -Wnested-externs
-        - -Wstrict-prototypes
-        - -Waggregate-return
-        - -Wno-implicit
-
-      - condition: os(windows)
-        cc-options:
-        - -DWIN_GCC
-
-      - condition: flag(clips-debug)
+      - condition: flag(system-clips)
         then:
-          cc-options: -O0 -g
+          extra-libraries: clips
         else:
-          cc-options: -O3 -fno-strict-aliasing
+          include-dirs: cbits/include
+          extra-libraries: m
+          cc-options: -std=c99
 
-    c-sources:
-    - cbits/agenda.c
-    - cbits/analysis.c
-    - cbits/argacces.c
-    - cbits/bload.c
-    - cbits/bmathfun.c
-    - cbits/bsave.c
-    - cbits/classcom.c
-    - cbits/classexm.c
-    - cbits/classfun.c
-    - cbits/classinf.c
-    - cbits/classini.c
-    - cbits/classpsr.c
-    - cbits/clsltpsr.c
-    - cbits/commline.c
-    - cbits/conscomp.c
-    - cbits/constrct.c
-    - cbits/constrnt.c
-    - cbits/crstrtgy.c
-    - cbits/cstrcbin.c
-    - cbits/cstrccom.c
-    - cbits/cstrcpsr.c
-    - cbits/cstrnbin.c
-    - cbits/cstrnchk.c
-    - cbits/cstrncmp.c
-    - cbits/cstrnops.c
-    - cbits/cstrnpsr.c
-    - cbits/cstrnutl.c
-    - cbits/default.c
-    - cbits/defins.c
-    - cbits/developr.c
-    - cbits/dffctbin.c
-    - cbits/dffctbsc.c
-    - cbits/dffctcmp.c
-    - cbits/dffctdef.c
-    - cbits/dffctpsr.c
-    - cbits/dffnxbin.c
-    - cbits/dffnxcmp.c
-    - cbits/dffnxexe.c
-    - cbits/dffnxfun.c
-    - cbits/dffnxpsr.c
-    - cbits/dfinsbin.c
-    - cbits/dfinscmp.c
-    - cbits/drive.c
-    - cbits/emathfun.c
-    - cbits/engine.c
-    - cbits/envrnbld.c
-    - cbits/envrnmnt.c
-    - cbits/evaluatn.c
-    - cbits/expressn.c
-    - cbits/exprnbin.c
-    - cbits/exprnops.c
-    - cbits/exprnpsr.c
-    - cbits/extnfunc.c
-    - cbits/factbin.c
-    - cbits/factbld.c
-    - cbits/factcmp.c
-    - cbits/factcom.c
-    - cbits/factfun.c
-    - cbits/factgen.c
-    - cbits/facthsh.c
-    - cbits/factlhs.c
-    - cbits/factmch.c
-    - cbits/factmngr.c
-    - cbits/factprt.c
-    - cbits/factqpsr.c
-    - cbits/factqury.c
-    - cbits/factrete.c
-    - cbits/factrhs.c
-    - cbits/filecom.c
-    - cbits/filertr.c
-    - cbits/fileutil.c
-    - cbits/generate.c
-    - cbits/genrcbin.c
-    - cbits/genrccmp.c
-    - cbits/genrccom.c
-    - cbits/genrcexe.c
-    - cbits/genrcfun.c
-    - cbits/genrcpsr.c
-    - cbits/globlbin.c
-    - cbits/globlbsc.c
-    - cbits/globlcmp.c
-    - cbits/globlcom.c
-    - cbits/globldef.c
-    - cbits/globlpsr.c
-    - cbits/immthpsr.c
-    - cbits/incrrset.c
-    - cbits/inherpsr.c
-    - cbits/inscom.c
-    - cbits/insfile.c
-    - cbits/insfun.c
-    - cbits/insmngr.c
-    - cbits/insmoddp.c
-    - cbits/insmult.c
-    - cbits/inspsr.c
-    - cbits/insquery.c
-    - cbits/insqypsr.c
-    - cbits/iofun.c
-    - cbits/lgcldpnd.c
-    # -bitsrc/main.c
-    - cbits/memalloc.c
-    - cbits/miscfun.c
-    - cbits/modulbin.c
-    - cbits/modulbsc.c
-    - cbits/modulcmp.c
-    - cbits/moduldef.c
-    - cbits/modulpsr.c
-    - cbits/modulutl.c
-    - cbits/msgcom.c
-    - cbits/msgfun.c
-    - cbits/msgpass.c
-    - cbits/msgpsr.c
-    - cbits/multifld.c
-    - cbits/multifun.c
-    - cbits/objbin.c
-    - cbits/objcmp.c
-    - cbits/objrtbin.c
-    - cbits/objrtbld.c
-    - cbits/objrtcmp.c
-    - cbits/objrtfnx.c
-    - cbits/objrtgen.c
-    - cbits/objrtmch.c
-    - cbits/parsefun.c
-    - cbits/pattern.c
-    - cbits/pprint.c
-    - cbits/prccode.c
-    - cbits/prcdrfun.c
-    - cbits/prcdrpsr.c
-    - cbits/prdctfun.c
-    - cbits/prntutil.c
-    - cbits/proflfun.c
-    - cbits/reorder.c
-    - cbits/reteutil.c
-    - cbits/retract.c
-    - cbits/router.c
-    - cbits/rulebin.c
-    - cbits/rulebld.c
-    - cbits/rulebsc.c
-    - cbits/rulecmp.c
-    - cbits/rulecom.c
-    - cbits/rulecstr.c
-    - cbits/ruledef.c
-    - cbits/ruledlt.c
-    - cbits/rulelhs.c
-    - cbits/rulepsr.c
-    - cbits/scanner.c
-    - cbits/sortfun.c
-    - cbits/strngfun.c
-    - cbits/strngrtr.c
-    - cbits/symblbin.c
-    - cbits/symblcmp.c
-    - cbits/symbol.c
-    - cbits/sysdep.c
-    - cbits/textpro.c
-    - cbits/tmpltbin.c
-    - cbits/tmpltbsc.c
-    - cbits/tmpltcmp.c
-    - cbits/tmpltdef.c
-    - cbits/tmpltfun.c
-    - cbits/tmpltlhs.c
-    - cbits/tmpltpsr.c
-    - cbits/tmpltrhs.c
-    - cbits/tmpltutl.c
-    - cbits/userdata.c
-    - cbits/userfunctions.c
-    - cbits/utility.c
-    - cbits/watch.c
+          when:
+            - condition: os(darwin)
+              cc-options:
+              - -DDARWIN
+              - -Wall
+              - -Wundef
+              - -Wpointer-arith
+              - -Wshadow
+              - -Wstrict-aliasing 
+              - -Winline
+              - -Wredundant-decls
+              - -Waggregate-return
+
+            - condition: os(linux)
+              cc-options:
+              - -DLINUX
+              - -Wall
+              - -Wundef
+              - -Wpointer-arith
+              - -Wshadow
+              - -Wstrict-aliasing
+              - -Winline
+              - -Wmissing-declarations
+              - -Wredundant-decls
+              - -Wmissing-prototypes
+              - -Wnested-externs
+              - -Wstrict-prototypes
+              - -Waggregate-return
+              - -Wno-implicit
+
+            - condition: os(windows)
+              cc-options:
+              - -DWIN_GCC
+
+            - condition: flag(clips-debug)
+              then:
+                cc-options: -O0 -g
+              else:
+                cc-options: -O3 -fno-strict-aliasing
+
+          c-sources:
+          - cbits/src/agenda.c
+          - cbits/src/analysis.c
+          - cbits/src/argacces.c
+          - cbits/src/bload.c
+          - cbits/src/bmathfun.c
+          - cbits/src/bsave.c
+          - cbits/src/classcom.c
+          - cbits/src/classexm.c
+          - cbits/src/classfun.c
+          - cbits/src/classinf.c
+          - cbits/src/classini.c
+          - cbits/src/classpsr.c
+          - cbits/src/clsltpsr.c
+          - cbits/src/commline.c
+          - cbits/src/conscomp.c
+          - cbits/src/constrct.c
+          - cbits/src/constrnt.c
+          - cbits/src/crstrtgy.c
+          - cbits/src/cstrcbin.c
+          - cbits/src/cstrccom.c
+          - cbits/src/cstrcpsr.c
+          - cbits/src/cstrnbin.c
+          - cbits/src/cstrnchk.c
+          - cbits/src/cstrncmp.c
+          - cbits/src/cstrnops.c
+          - cbits/src/cstrnpsr.c
+          - cbits/src/cstrnutl.c
+          - cbits/src/default.c
+          - cbits/src/defins.c
+          - cbits/src/developr.c
+          - cbits/src/dffctbin.c
+          - cbits/src/dffctbsc.c
+          - cbits/src/dffctcmp.c
+          - cbits/src/dffctdef.c
+          - cbits/src/dffctpsr.c
+          - cbits/src/dffnxbin.c
+          - cbits/src/dffnxcmp.c
+          - cbits/src/dffnxexe.c
+          - cbits/src/dffnxfun.c
+          - cbits/src/dffnxpsr.c
+          - cbits/src/dfinsbin.c
+          - cbits/src/dfinscmp.c
+          - cbits/src/drive.c
+          - cbits/src/emathfun.c
+          - cbits/src/engine.c
+          - cbits/src/envrnbld.c
+          - cbits/src/envrnmnt.c
+          - cbits/src/evaluatn.c
+          - cbits/src/expressn.c
+          - cbits/src/exprnbin.c
+          - cbits/src/exprnops.c
+          - cbits/src/exprnpsr.c
+          - cbits/src/extnfunc.c
+          - cbits/src/factbin.c
+          - cbits/src/factbld.c
+          - cbits/src/factcmp.c
+          - cbits/src/factcom.c
+          - cbits/src/factfun.c
+          - cbits/src/factgen.c
+          - cbits/src/facthsh.c
+          - cbits/src/factlhs.c
+          - cbits/src/factmch.c
+          - cbits/src/factmngr.c
+          - cbits/src/factprt.c
+          - cbits/src/factqpsr.c
+          - cbits/src/factqury.c
+          - cbits/src/factrete.c
+          - cbits/src/factrhs.c
+          - cbits/src/filecom.c
+          - cbits/src/filertr.c
+          - cbits/src/fileutil.c
+          - cbits/src/generate.c
+          - cbits/src/genrcbin.c
+          - cbits/src/genrccmp.c
+          - cbits/src/genrccom.c
+          - cbits/src/genrcexe.c
+          - cbits/src/genrcfun.c
+          - cbits/src/genrcpsr.c
+          - cbits/src/globlbin.c
+          - cbits/src/globlbsc.c
+          - cbits/src/globlcmp.c
+          - cbits/src/globlcom.c
+          - cbits/src/globldef.c
+          - cbits/src/globlpsr.c
+          - cbits/src/immthpsr.c
+          - cbits/src/incrrset.c
+          - cbits/src/inherpsr.c
+          - cbits/src/inscom.c
+          - cbits/src/insfile.c
+          - cbits/src/insfun.c
+          - cbits/src/insmngr.c
+          - cbits/src/insmoddp.c
+          - cbits/src/insmult.c
+          - cbits/src/inspsr.c
+          - cbits/src/insquery.c
+          - cbits/src/insqypsr.c
+          - cbits/src/iofun.c
+          - cbits/src/lgcldpnd.c
+          # -bits/srcrc/main.c
+          - cbits/src/memalloc.c
+          - cbits/src/miscfun.c
+          - cbits/src/modulbin.c
+          - cbits/src/modulbsc.c
+          - cbits/src/modulcmp.c
+          - cbits/src/moduldef.c
+          - cbits/src/modulpsr.c
+          - cbits/src/modulutl.c
+          - cbits/src/msgcom.c
+          - cbits/src/msgfun.c
+          - cbits/src/msgpass.c
+          - cbits/src/msgpsr.c
+          - cbits/src/multifld.c
+          - cbits/src/multifun.c
+          - cbits/src/objbin.c
+          - cbits/src/objcmp.c
+          - cbits/src/objrtbin.c
+          - cbits/src/objrtbld.c
+          - cbits/src/objrtcmp.c
+          - cbits/src/objrtfnx.c
+          - cbits/src/objrtgen.c
+          - cbits/src/objrtmch.c
+          - cbits/src/parsefun.c
+          - cbits/src/pattern.c
+          - cbits/src/pprint.c
+          - cbits/src/prccode.c
+          - cbits/src/prcdrfun.c
+          - cbits/src/prcdrpsr.c
+          - cbits/src/prdctfun.c
+          - cbits/src/prntutil.c
+          - cbits/src/proflfun.c
+          - cbits/src/reorder.c
+          - cbits/src/reteutil.c
+          - cbits/src/retract.c
+          - cbits/src/router.c
+          - cbits/src/rulebin.c
+          - cbits/src/rulebld.c
+          - cbits/src/rulebsc.c
+          - cbits/src/rulecmp.c
+          - cbits/src/rulecom.c
+          - cbits/src/rulecstr.c
+          - cbits/src/ruledef.c
+          - cbits/src/ruledlt.c
+          - cbits/src/rulelhs.c
+          - cbits/src/rulepsr.c
+          - cbits/src/scanner.c
+          - cbits/src/sortfun.c
+          - cbits/src/strngfun.c
+          - cbits/src/strngrtr.c
+          - cbits/src/symblbin.c
+          - cbits/src/symblcmp.c
+          - cbits/src/symbol.c
+          - cbits/src/sysdep.c
+          - cbits/src/textpro.c
+          - cbits/src/tmpltbin.c
+          - cbits/src/tmpltbsc.c
+          - cbits/src/tmpltcmp.c
+          - cbits/src/tmpltdef.c
+          - cbits/src/tmpltfun.c
+          - cbits/src/tmpltlhs.c
+          - cbits/src/tmpltpsr.c
+          - cbits/src/tmpltrhs.c
+          - cbits/src/tmpltutl.c
+          - cbits/src/userdata.c
+          - cbits/src/userfunctions.c
+          - cbits/src/utility.c
+          - cbits/src/watch.c
 
 tests:
   clips-test:
@@ -257,4 +271,4 @@ tests:
     dependencies:
     - hspec
     - clips
-    - clips-c2hs
+    - clips-clib

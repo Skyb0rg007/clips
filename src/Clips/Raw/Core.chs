@@ -11,9 +11,7 @@ module Clips.Raw.Core (
         , loadEnvFromFile
         -- * Creating and Removing Facts and Instances
         , assertString
-        , getAssertStringError
         , makeInstance
-        , getMakeInstanceError
         , retractFact
         , unmakeInstance
         -- * Executing Rules
@@ -34,68 +32,94 @@ import           Foreign.C.Types
 
 #include "clips.h"
 
+fromCEnum :: Enum a => a -> CInt
+fromCEnum = fromIntegral . fromEnum
+
+toCEnum :: Enum a => CInt -> a
+toCEnum = toEnum . fromIntegral
+
 -- | Create a new CLIPS environment
-foreign import ccall unsafe "CreateEnvironment"
-    createEnv :: IO EnvironmentPtr
+createEnv :: IO EnvironmentPtr
+createEnv = {# call unsafe CreateEnvironment as ^ #}
 
 -- | Destroy a CLIPS environment
+destroyEnv :: EnvironmentPtr -> IO Bool
+destroyEnv = fmap toBool . destroyEnvC
+
 foreign import ccall unsafe "DestroyEnvironment"
-    destroyEnv :: EnvironmentPtr -> IO Bool
+    destroyEnvC :: EnvironmentPtr -> IO CBool
 
 -- | Completely reset a CLIPS environment
+clearEnv :: EnvironmentPtr -> IO Bool
+clearEnv = fmap toBool . clearEnvC
+
 foreign import ccall unsafe "Clear"
-    clearEnv :: EnvironmentPtr -> IO Bool
+    clearEnvC :: EnvironmentPtr -> IO CBool
 
 -- | Load the environment from the given file
-{# fun unsafe Load as loadEnvFromFile
-    {`EnvironmentPtr', `CString'} -> `LoadError' #}
+loadEnvFromFile :: EnvironmentPtr -> FilePath -> IO LoadError
+loadEnvFromFile env path = fmap toCEnum . withCString path $
+    {# call unsafe Load as ^ #} env
 
 -- | Assert a fact from a string
 -- Returns a pointer to the fact,
--- only valid until the next call unless retained
-{# fun unsafe AssertString as assertString
-    {`EnvironmentPtr', `CString'} -> `FactPtr' #}
-
--- | Determine an error from a call to assertString
-{# fun unsafe GetAssertStringError as getAssertStringError
-    {`EnvironmentPtr'} -> `AssertStringError' #}
+-- which is only valid until the next call, unless retained
+assertString :: EnvironmentPtr
+             -> String
+             -> IO (Either AssertStringError FactPtr)
+assertString env str = do
+    factPtr <- withCString str $ {# call unsafe AssertString as aStr #} env
+    let errorCode = toCEnum <$> {# call GetAssertStringError as ^ #} env
+    if factPtr == nullPtr
+        then Left <$> errorCode
+        else pure $ Right factPtr
 
 -- | Create an instance from a string
-{# fun unsafe MakeInstance as makeInstance
-    {`EnvironmentPtr', `CString'} -> `InstancePtr' #}
-
--- | Determine an error from a call to makeInstance
-{# fun unsafe GetMakeInstanceError as getMakeInstanceError
-    {`EnvironmentPtr'} -> `MakeInstanceError' #}
+makeInstance :: EnvironmentPtr
+             -> String
+             -> IO (Either MakeInstanceError InstancePtr)
+makeInstance env str = do
+    instPtr <- withCString str $ {# call unsafe MakeInstance as mkInst #} env
+    let errorCode = toCEnum <$> {# call GetMakeInstanceError as ^ #} env
+    if instPtr == nullPtr
+        then Left <$> errorCode
+        else pure $ Right instPtr
 
 -- | Retract a previously defined fact
-{# fun unsafe Retract as retractFact
-    {`FactPtr'} -> `RetractError' #}
+retractFact :: FactPtr -> IO RetractError
+retractFact = fmap toCEnum . {# call unsafe Retract as ^ #}
 
 -- | Remove a previously instantiated class member
-{# fun unsafe UnmakeInstance as unmakeInstance
-    {`InstancePtr'} -> `UnmakeInstanceError' #}
+unmakeInstance :: InstancePtr -> IO UnmakeInstanceError
+unmakeInstance = fmap toCEnum . {# call unsafe UnmakeInstance as unmkInst #}
 
 -- | Reset an environment, leaving deffacts, defrules, definstances, etc.
-{# fun unsafe Reset as resetEnv
-    {`EnvironmentPtr'} -> `()' #}
+resetEnv :: EnvironmentPtr -> IO ()
+resetEnv = {# call unsafe Reset as resetEnvC #}
 
 -- | Run an environment, at most n times. passing (-1) means infinitely
-{# fun unsafe Run as runEnv
-    {`EnvironmentPtr', fromIntegral `CLLong'} -> `CLLong' fromIntegral #}
+runEnv :: EnvironmentPtr -> Int -> IO Int
+runEnv env n = fromIntegral
+    <$> {# call unsafe Run as runEnvC #} env (fromIntegral n)
 
 -- | Enable dribbling to a file
-{# fun unsafe DribbleOn as enableDribble
-    {`EnvironmentPtr', `CString'} -> `Bool' #}
+enableDribble :: EnvironmentPtr -> FilePath -> IO Bool
+enableDribble env path = fmap toBool . withCString path $ enableDribbleC env
 
--- | Disable dribbline
-{# fun unsafe DribbleOff as disableDribble
-    {`EnvironmentPtr'} -> `Bool' #}
+foreign import ccall unsafe "DribbleOn"
+    enableDribbleC :: EnvironmentPtr -> CString -> IO CBool
+
+-- | Disable dribbling to a file
+disableDribble :: EnvironmentPtr -> IO Bool
+disableDribble = fmap toBool . disableDribbleC
+
+foreign import ccall unsafe "DribbleOff"
+    disableDribbleC :: EnvironmentPtr -> IO CBool
 
 -- | Watch a specific type of expression
-{# fun unsafe Watch as watchEnv
-    {`EnvironmentPtr', `WatchItem'} -> `()' #}
+watchEnv :: EnvironmentPtr -> WatchItem -> IO ()
+watchEnv env wi = {# call unsafe Watch as ^ #} env $ fromCEnum wi
 
 -- | Remove a watch on a type of expression
-{# fun unsafe Unwatch as unwatchEnv
-    {`EnvironmentPtr', `WatchItem'} -> `()' #}
+unwatchEnv :: EnvironmentPtr -> WatchItem -> IO ()
+unwatchEnv env wi = {# call unsafe Unwatch as ^ #} env $ fromCEnum wi
