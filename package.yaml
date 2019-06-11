@@ -6,8 +6,7 @@ author:              Skye Soss
 maintainer:          Skye Soss <skyler.soss@gmail.com>
 copyright:           2019 Skye Soss
 
-extra-source-files:
-- README.md
+extra-source-files:  README.md
 
 synopsis:            Haskell bindings to CLIPS
 # category:            Web
@@ -16,6 +15,9 @@ description:         Please see the README on GitHub at <https://github.com/Skyb
 
 dependencies:
 - base >= 4.7 && < 5
+- mtl
+- text
+- unliftio
 
 ghc-options:
 - -Wall
@@ -36,9 +38,11 @@ library:
   dependencies: clips-clib
   # We need to manually list these so c2hs runs in the right order
   exposed-modules:
-  - Clips.Raw.Types
-  - Clips.Raw.Core
-  - Clips.Raw.Advanced
+  - Clips.Error
+  - Clips.Types
+  - Clips.Core
+  - Clips.Transformer
+  - Clips
 
 internal-libraries:
   clips-clib:
@@ -271,4 +275,3 @@ tests:
     dependencies:
     - hspec
     - clips
-    - clips-clib
